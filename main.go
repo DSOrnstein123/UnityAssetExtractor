@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -39,17 +41,39 @@ func main() {
 		DecryptScript:      os.Getenv("DECRYPT_SCRIPT"),
 	}
 
-	links := []string{}
-
-	totalFiles = int32(len(links))
-
-	// gui(links)
-	processWithBatching(links)
+	gui()
 }
 
-func processWithBatching(urls []string) {
+func createUrls() ([]string, error) {
+	data, err := os.ReadFile("list.json")
+	if err != nil {
+		fmt.Printf("Lỗi khi đọc file: %v\n", err)
+		return nil, err
+	}
+
+	var assetList []string
+	err = json.Unmarshal(data, &assetList)
+	if err != nil {
+		fmt.Printf("Lỗi khi giải mã JSON: %v\n", err)
+		return nil, err
+	}
+
+	var urls []string
+	for _, elem := range assetList {
+		urls = append(urls, config.RootURL+elem)
+	}
+
+	return urls, nil
+}
+
+func processWithBatching() {
 	downloadedFiles := make(chan string, config.BatchSize*2)
 	batches := make(chan []string, config.NumBatchProcessors)
+
+	urls, err := createUrls()
+	if err != nil {
+		return
+	}
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)

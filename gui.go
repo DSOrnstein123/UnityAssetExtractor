@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -12,14 +14,17 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func gui(links []string) {
+func gui() {
 	app := app.NewWithID("com.yourname.unityassetpipeline")
 	window := app.NewWindow("Auto Unity Asset Pipeline")
+
+	var inputFilePath string
+	var decryptFilePath string
 
 	labelChooseInput := widget.NewLabel("Choose input file:")
 	entryChooseInput := widget.NewEntry()
 	buttonChooseInput := widget.NewButton("   Choose file   ", func() {
-		dialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if err != nil {
 				dialog.ShowError(err, window)
 				return
@@ -29,38 +34,38 @@ func gui(links []string) {
 			}
 			defer reader.Close()
 
-			selectedFile := reader.URI().Path()
-			entryChooseInput.SetText(selectedFile)
+			inputFilePath = reader.URI().Path()
+			entryChooseInput.SetText(inputFilePath)
 		}, window)
 
-		dialog.SetFilter(storage.NewExtensionFileFilter([]string{".xlsx"}))
-		dialog.Show()
+		fd.SetFilter(storage.NewExtensionFileFilter([]string{".xlsx", ".csv"}))
+		fd.Show()
 	})
 	rowChooseInput := container.NewBorder(nil, nil, nil, buttonChooseInput, entryChooseInput)
 
-	labelChooseOutput := widget.NewLabel("Choose output folder:")
-	entryChooseOutput := widget.NewEntry()
-	buttonChooseOutput := widget.NewButton("Choose folder", func() {
-		dialog.ShowFolderOpen(func(lu fyne.ListableURI, err error) {
-			selectedFolder := lu.Path()
-			entryChooseOutput.SetText(selectedFolder)
-		}, window)
-	})
-	rowChooseOutput := container.NewBorder(nil, nil, nil, buttonChooseOutput, entryChooseOutput)
+	// labelChooseOutput := widget.NewLabel("Choose output folder:")
+	// entryChooseOutput := widget.NewEntry()
+	// buttonChooseOutput := widget.NewButton("Choose folder", func() {
+	// 	dialog.ShowFolderOpen(func(lu fyne.ListableURI, err error) {
+	// 		selectedFolder := lu.Path()
+	// 		entryChooseOutput.SetText(selectedFolder)
+	// 	}, window)
+	// })
+	// rowChooseOutput := container.NewBorder(nil, nil, nil, buttonChooseOutput, entryChooseOutput)
 
-	labelDownloadOption := widget.NewLabel("Keep downloaded files:")
-	checkboxDownloadOption := widget.NewCheck("", func(checked bool) {
-		if checked {
-			fmt.Println("Đánh dấu giữ file")
-		} else {
-			fmt.Println("Không giữ file")
-		}
-	})
-	rowDownloadOption := container.NewHBox(
-		labelDownloadOption,
-		layout.NewSpacer(),
-		checkboxDownloadOption,
-	)
+	// labelDownloadOption := widget.NewLabel("Keep downloaded files:")
+	// checkboxDownloadOption := widget.NewCheck("", func(checked bool) {
+	// 	if checked {
+	// 		fmt.Println("Đánh dấu giữ file")
+	// 	} else {
+	// 		fmt.Println("Không giữ file")
+	// 	}
+	// })
+	// rowDownloadOption := container.NewHBox(
+	// 	labelDownloadOption,
+	// 	layout.NewSpacer(),
+	// 	checkboxDownloadOption,
+	// )
 
 	labelDecryptOption := widget.NewLabel("Decrypt:")
 	checkboxDecryptOption := widget.NewCheck("", func(checked bool) {
@@ -87,22 +92,36 @@ func gui(links []string) {
 			}
 			defer reader.Close()
 
-			selectedFile := reader.URI().Path()
-			entryDecryptFile.SetText(selectedFile)
+			decryptFilePath = reader.URI().Path()
+			entryDecryptFile.SetText(decryptFilePath)
 		}, window)
 	})
 	rowDecryptFile := container.NewBorder(nil, nil, nil, chooseDecryptFile, entryDecryptFile)
 
 	startButton := widget.NewButton("Start", func() {
-		go processWithBatching(links)
+		go func() {
+			pythonPath := "./venv/Scripts/python.exe"
+			cmd := exec.Command(pythonPath, "input_handler.py", inputFilePath)
+
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+
+			err := cmd.Run()
+			if err != nil {
+				fmt.Printf("Lỗi thực thi: %v\n", err)
+				return
+			}
+
+			processWithBatching()
+		}()
 	})
 
 	window.SetContent(container.NewVBox(
 		labelChooseInput,
 		rowChooseInput,
-		labelChooseOutput,
-		rowChooseOutput,
-		rowDownloadOption,
+		// labelChooseOutput,
+		// rowChooseOutput,
+		// rowDownloadOption,
 		rowDecryptOption,
 		rowDecryptFile,
 		layout.NewSpacer(),
