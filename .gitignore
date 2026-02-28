@@ -5,4 +5,10 @@ extracted/*
 
 download/*
 
-venv
+venv/
+__pycache__/
+*.pyc
+
+.env
+
+.vscode
