@@ -15,8 +15,8 @@ import (
 )
 
 func gui() {
-	app := app.NewWithID("com.yourname.unityassetpipeline")
-	window := app.NewWindow("Auto Unity Asset Pipeline")
+	app := app.NewWithID("com.yourname.unityassetextractor")
+	window := app.NewWindow("UnityAssetExtractor")
 
 	var inputFilePath string
 	var decryptFilePath string
