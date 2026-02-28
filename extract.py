@@ -58,6 +58,3 @@ output_folder = "./extracted"
 
 for file in inputs:
   extract(file, output_folder)
-
-# TODO: remove file after extracting
-# TODO: return number of extracted files
